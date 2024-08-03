@@ -319,6 +319,27 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    //app.UseSwagger();
+    //app.UseSwaggerUI();
+    // HTTP Security Headers
+    app.UseHsts();
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Frame-Options",
+            "sameorigin");
+        context.Response.Headers.Append("X-XSS-Protection",
+            "1; mode=block");
+        context.Response.Headers.Append("X-Content-Type-Options",
+            "nosniff");
+        context.Response.Headers.Append("Content-Security-Policy",
+            "default-src 'self'; script-src 'self' 'nonce-23a98b38c'");
+        context.Response.Headers.Append("Referrer-Policy",
+            "strict-origin");
+        await next();
+    });
+}
 
 if (app.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
     app.UseDeveloperExceptionPage();
