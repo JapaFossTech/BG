@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\BG.Model\BG.Model.csproj" />
+		<!-- <ProjectReference Include="..\BG.Repo.Ado\BG.Repo.Ado.csproj" /> -->
+		<ProjectReference Include="..\BG.Repo.RestApi\BG.Repo.RestApi.csproj" />
+		<ProjectReference Include="..\BG.Repo.EF\BG.Repo.EF.csproj" />
+		<!-- <ProjectReference Include="..\BG.Repo.InMem\BG.Repo.InMem.csproj" /> -->
+	</ItemGroup>
+
+</Project>
