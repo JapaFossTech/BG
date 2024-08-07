@@ -318,11 +318,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
-    //app.UseSwagger();
+    //app.UseSwagger();     //* Uncomment if using: "ASPNETCORE_ENVIRONMENT": "Production" at launchSettings.json
     //app.UseSwaggerUI();
+    app.UseExceptionHandler("/error");
     // HTTP Security Headers
     app.UseHsts();
     app.Use(async (context, next) =>
@@ -341,34 +343,34 @@ else
     });
 }
 
-if (app.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
-    app.UseDeveloperExceptionPage();
-else
-{
-    app.UseExceptionHandler("/error");
+//if (app.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
+//    app.UseDeveloperExceptionPage();
+//else
+//{
+//    app.UseExceptionHandler("/error");
 
-    //app.UseExceptionHandler("/error");
-    //app.UseExceptionHandler(appBuilder =>
-    //{
-    //    appBuilder.Run(async requestDelegate =>
-    //    {
-    //        IExceptionHandlerPathFeature? exceptionHandler = requestDelegate.Features
-    //                            .Get<IExceptionHandlerPathFeature>();
+//    //app.UseExceptionHandler("/error");
+//    //app.UseExceptionHandler(appBuilder =>
+//    //{
+//    //    appBuilder.Run(async requestDelegate =>
+//    //    {
+//    //        IExceptionHandlerPathFeature? exceptionHandler = requestDelegate.Features
+//    //                            .Get<IExceptionHandlerPathFeature>();
 
-    //        var details = new ProblemDetails();
+//    //        var details = new ProblemDetails();
 
-    //        details.Detail = exceptionHandler?.Error.Message;
-    //        details.Extensions["traceId"] = System.Diagnostics
-    //                                        .Activity.Current?.Id 
-    //                                        ?? requestDelegate.TraceIdentifier;
-    //        details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1";
-    //        details.Status = StatusCodes.Status500InternalServerError;
+//    //        details.Detail = exceptionHandler?.Error.Message;
+//    //        details.Extensions["traceId"] = System.Diagnostics
+//    //                                        .Activity.Current?.Id 
+//    //                                        ?? requestDelegate.TraceIdentifier;
+//    //        details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1";
+//    //        details.Status = StatusCodes.Status500InternalServerError;
 
-    //        await requestDelegate.Response.WriteAsync(
-    //            System.Text.Json.JsonSerializer.Serialize(details));
-    //    });
-    //});
-}
+//    //        await requestDelegate.Response.WriteAsync(
+//    //            System.Text.Json.JsonSerializer.Serialize(details));
+//    //    });
+//    //});
+//}
 
 app.UseHttpsRedirection();
 
