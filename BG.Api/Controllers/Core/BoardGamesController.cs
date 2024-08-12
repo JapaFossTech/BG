@@ -64,6 +64,7 @@ namespace BG.API.Controllers.Core
         }
 
         [HttpGet()]
+        [Route("GetAll")]             //* api/Core/BoardGames/GetAll
         public async Task<ActionResult<IEnumerable<BoardGame>>> GetBoardGames()
         {
             try
@@ -141,7 +142,7 @@ namespace BG.API.Controllers.Core
         }
 
         [HttpGet()]     //* Name = "GetBoardGamesDto"
-        [Route("GetAllDto")]             //* api/Core/BoardGames/GetAllDto
+        //[Route("GetAllDto")]             //* api/Core/BoardGames/GetAllDto
         //[ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
         [ResponseCache(CacheProfileName = "Any-60")]
         [SwaggerOperation(
@@ -152,15 +153,15 @@ namespace BG.API.Controllers.Core
                         [FromQuery]
                         [SwaggerParameter("A DTO object that can be used " +
                                 "to customize some retrieval parameters.")]
-                        BaseGetRequest<BoardGame_ChangeDTO> getRequest
-            )
+                        BaseGetRequest<BoardGame_ChangeDTO> requestToGet
+        )
         {
-            string cacheKey = $"{getRequest.GetType()}"
-                                +$"-{JsonSerializer.Serialize(getRequest)}";
+            requestToGet.SortColumn ??= "BoardGameID";    //if SortColumn null, override
+
+            string cacheKey = $"{requestToGet.GetType()}"
+                                + $"-{JsonSerializer.Serialize(requestToGet)}";
 
             _logger.LogInformation(500151, "Get start. cacheKey : {cacheKey}", cacheKey);
-
-            getRequest.SortColumn ??= "BoardGameID";    //if SortColumn null, override
 
             List<BoardGame>? boardGames = null;
 
@@ -170,20 +171,24 @@ namespace BG.API.Controllers.Core
             }
             else
             {
+                #region Get data from database and cache it
+
                 //* Data is not cached, get it from DBMS and cache it
 
                 boardGames = await this.BoardGameServices
                                 .GetAll_Paged_Sorted_andFiltered(
-                                    pageIndex: getRequest.PageIndex
-                                    , pageSize: getRequest.PageSize
-                                    , sortColumn: getRequest.SortColumn
-                                    , sortOrder: getRequest.SortOrder!
-                                    , filterQuery: getRequest.FilterQuery
+                                    pageIndex: requestToGet.PageIndex
+                                    , pageSize: requestToGet.PageSize
+                                    , sortColumn: requestToGet.SortColumn
+                                    , sortOrder: requestToGet.SortOrder!
+                                    , filterQuery: requestToGet.FilterQuery
                                     );
 
                 _memoryCache.Set(cacheKey, boardGames, new TimeSpan(0, 0, 20));
 
                 _logger.LogInformation(500151, "Data fetched from database");
+
+                #endregion
             }
 
             //* Distributed caching
@@ -196,20 +201,24 @@ namespace BG.API.Controllers.Core
             }
             else
             {
+                #region Get data from database and (distributed) cache it
+
                 //* Data is not cached, get it from DBMS and cache it
 
                 boardGames_distributed = await this.BoardGameServices
                                 .GetAll_Paged_Sorted_andFiltered(
-                                    pageIndex: getRequest.PageIndex
-                                    , pageSize: getRequest.PageSize
-                                    , sortColumn: getRequest.SortColumn
-                                    , sortOrder: getRequest.SortOrder!
-                                    , filterQuery: getRequest.FilterQuery
+                                    pageIndex: requestToGet.PageIndex
+                                    , pageSize: requestToGet.PageSize
+                                    , sortColumn: requestToGet.SortColumn
+                                    , sortOrder: requestToGet.SortOrder!
+                                    , filterQuery: requestToGet.FilterQuery
                                     );
 
                 _distributedCache.Set(cacheKey, boardGames_distributed, new TimeSpan(0, 0, 40));
 
                 _logger.LogInformation(500151, "Data fetched from database (distributed)");
+
+                #endregion
             }
 
 
@@ -220,23 +229,29 @@ namespace BG.API.Controllers.Core
 
             //throw new Exception("Test error from get end point");
 
-            return new RestResponse<List<BoardGame>>()
+            #region Create REST Response
+
+            var restResponse = new RestResponse<List<BoardGame>>()
             {
                 Data = boardGames,
-                PageIndex = getRequest.PageIndex,
-                PageSize = getRequest.PageSize,
+                PageIndex = requestToGet.PageIndex,
+                PageSize = requestToGet.PageSize,
                 RecordCount = boardGames.Count,
                 Links = new List<ResponseLink> {
                     new ResponseLink(
                         Url.Action(
                             null,
                             "BoardGames",
-                            new { getRequest.PageIndex, getRequest.PageSize },
+                            new { requestToGet.PageIndex, requestToGet.PageSize },
                             Request.Scheme)!,
                         "self",
                         "GET"),
                 }
             };
+
+            #endregion
+
+            return restResponse;
         }
         
 

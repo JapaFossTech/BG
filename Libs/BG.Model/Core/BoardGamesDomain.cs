@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Infrastructure.Extensions;
 using System.ComponentModel.DataAnnotations;
-using Infrastructure.Data;
+using PrjBase.Data;
 
 
 namespace BG.Model.Core
