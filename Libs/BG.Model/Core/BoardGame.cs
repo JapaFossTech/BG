@@ -72,7 +72,8 @@ namespace BG.Model.Core
     #region Interfaces
 
     public partial interface IBoardGameRepository :
-            ICrud<BoardGame>, ISearch<BoardGame>, IPaging<BoardGame>, ICount<BoardGame>
+            ICrud<BoardGame>, ISearch<BoardGame>, IPaging<BoardGame>
+            , ICount<BoardGame>
     { }
 
     public partial interface IBoardGameServices : IBoardGameRepository

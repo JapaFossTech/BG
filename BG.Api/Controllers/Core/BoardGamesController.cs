@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using PrjBase.CachingBase;
+using PrjBase.Data;
 using PrjBase.ModelBase.Attributes;
 using PrjBase.SecurityBase;
 
@@ -54,7 +55,8 @@ namespace BG.API.Controllers.Core
             }
 
             //* Proceed
-            BoardGame insertedBoardGame = await this.BoardGameServices.Insert(boardGame);
+            BoardGame insertedBoardGame = await this.BoardGameServices
+                                                        .Insert(boardGame);
 
             return CreatedAtAction(
                 actionName: nameof(GetBoardGame),
@@ -144,7 +146,7 @@ namespace BG.API.Controllers.Core
         [HttpGet()]     //* Name = "GetBoardGamesDto"
         //[Route("GetAllDto")]             //* api/Core/BoardGames/GetAllDto
         //[ResponseCache(Location = ResponseCacheLocation.Any, Duration = 60)]
-        [ResponseCache(CacheProfileName = "Any-60")]
+        [ResponseCache(CacheProfileName = "AnyRespCacheLocation-60")]
         [SwaggerOperation(
             Summary = "Get a list of board games.",
             Description = "Retrieves a list of board games " +
@@ -153,13 +155,13 @@ namespace BG.API.Controllers.Core
                         [FromQuery]
                         [SwaggerParameter("A DTO object that can be used " +
                                 "to customize some retrieval parameters.")]
-                        BaseGetRequest<BoardGame_ChangeDTO> requestToGet
+                        GridDataRequest<BoardGame_ChangeDTO> gridDataRequest
         )
         {
-            requestToGet.SortColumn ??= "BoardGameID";    //if SortColumn null, override
+            gridDataRequest.SortColumn ??= "BoardGameID";    //if SortColumn null, override
 
-            string cacheKey = $"{requestToGet.GetType()}"
-                                + $"-{JsonSerializer.Serialize(requestToGet)}";
+            string cacheKey = $"{gridDataRequest.GetType()}"
+                                + $"-{JsonSerializer.Serialize(gridDataRequest)}";
 
             _logger.LogInformation(500151, "Get start. cacheKey : {cacheKey}", cacheKey);
 
@@ -177,12 +179,14 @@ namespace BG.API.Controllers.Core
 
                 boardGames = await this.BoardGameServices
                                 .GetAll_Paged_Sorted_andFiltered(
-                                    pageIndex: requestToGet.PageIndex
-                                    , pageSize: requestToGet.PageSize
-                                    , sortColumn: requestToGet.SortColumn
-                                    , sortOrder: requestToGet.SortOrder!
-                                    , filterQuery: requestToGet.FilterQuery
+                                    pageIndex: gridDataRequest.PageIndex
+                                    , pageSize: gridDataRequest.PageSize
+                                    , sortColumn: gridDataRequest.SortColumn
+                                    , sortOrder: gridDataRequest.SortOrder!
+                                    , filterQuery: gridDataRequest.FilterQuery
                                     );
+                //boardGames = await this.BoardGameServices
+                //                .GetAll_Paged_Sorted_andFiltered(getDataRequest);
 
                 _memoryCache.Set(cacheKey, boardGames, new TimeSpan(0, 0, 20));
 
@@ -207,12 +211,15 @@ namespace BG.API.Controllers.Core
 
                 boardGames_distributed = await this.BoardGameServices
                                 .GetAll_Paged_Sorted_andFiltered(
-                                    pageIndex: requestToGet.PageIndex
-                                    , pageSize: requestToGet.PageSize
-                                    , sortColumn: requestToGet.SortColumn
-                                    , sortOrder: requestToGet.SortOrder!
-                                    , filterQuery: requestToGet.FilterQuery
+                                    pageIndex: gridDataRequest.PageIndex
+                                    , pageSize: gridDataRequest.PageSize
+                                    , sortColumn: gridDataRequest.SortColumn
+                                    , sortOrder: gridDataRequest.SortOrder!
+                                    , filterQuery: gridDataRequest.FilterQuery
                                     );
+
+                //boardGames = await this.BoardGameServices
+                //                .GetAll_Paged_Sorted_andFiltered(getDataRequest);
 
                 _distributedCache.Set(cacheKey, boardGames_distributed, new TimeSpan(0, 0, 40));
 
@@ -234,15 +241,17 @@ namespace BG.API.Controllers.Core
             var restResponse = new RestResponse<List<BoardGame>>()
             {
                 Data = boardGames,
-                PageIndex = requestToGet.PageIndex,
-                PageSize = requestToGet.PageSize,
+                PageIndex = gridDataRequest.PageIndex,
+                PageSize = gridDataRequest.PageSize,
                 RecordCount = boardGames.Count,
                 Links = new List<ResponseLink> {
                     new ResponseLink(
                         Url.Action(
                             null,
                             "BoardGames",
-                            new { requestToGet.PageIndex, requestToGet.PageSize },
+                            new { gridDataRequest.PageIndex, gridDataRequest.PageSize
+                                , gridDataRequest.SortColumn, gridDataRequest.SortOrder
+                                , gridDataRequest.FilterQuery },
                             Request.Scheme)!,
                         "self",
                         "GET"),
@@ -274,6 +283,7 @@ namespace BG.API.Controllers.Core
 
 
         [HttpPut("{id:int}")]
+        [ResponseCache(NoStore = true)]
         public async Task<IActionResult> UpdateBoardGame(int id, BoardGame boardGame)
         {
             //* Validate
@@ -295,13 +305,14 @@ namespace BG.API.Controllers.Core
         }
 
         [Authorize(Roles = RoleName.MODERATOR)]
-        [HttpPost()]                        //Name = "UpdateBoardGame"
+        [HttpPut()]                        //Name = "UpdateBoardGame"
         [ResponseCache(NoStore = true)]
         [Route("UpdateDto")]         //* api/Core/BoardGames/UpdateBoardGame
         [SwaggerOperation(
-            Summary = "Updates a board game.",
+            Summary = "Updates a board game (RoleName.MODERATOR).",
             Description = "Updates the board game's data.")]
-        public async Task<RestResponse<BoardGame?>> UpdateDto(BoardGame_ChangeDTO boardGame)
+        public async Task<RestResponse<BoardGame?>> UpdateDto(
+                                                    BoardGame_ChangeDTO boardGame)
         {
             _logger.LogInformation(500152, "Update start");
 
@@ -339,8 +350,9 @@ namespace BG.API.Controllers.Core
 
         [Authorize(Roles = RoleName.ADMIN)]
         [HttpDelete("{id:int}")]
+        [ResponseCache(NoStore = true)]
         [SwaggerOperation(
-            Summary = "Deletes a board game.",
+            Summary = "Deletes a board game (RoleName.ADMIN).",
             Description = "Deletes a board game from the database.")]
         public async Task<IActionResult> DeleteBoardGame(int id)
         {
@@ -353,29 +365,29 @@ namespace BG.API.Controllers.Core
             return NoContent();
         }
 
-        [HttpDelete()]//Name = "DeleteBoardGame"
-        [ResponseCache(NoStore = true)]
-        [Route("Delete")]         //* api/Core/BoardGames/UpdateBoardGame
-        public async Task<RestResponse<bool>> Delete(int id)
-        {
-            bool isDeleted = await this.BoardGameServices.Delete(id);
+        //[HttpDelete()]//Name = "DeleteBoardGame"
+        //[ResponseCache(NoStore = true)]
+        //[Route("Delete")]         //* api/Core/BoardGames/UpdateBoardGame
+        //public async Task<RestResponse<bool>> Delete(int id)
+        //{
+        //    bool isDeleted = await this.BoardGameServices.Delete(id);
 
-            return new RestResponse<bool>()
-            {
-                Data = isDeleted,       //* Change to provide Deleted BoardGame
-                Links = new List<ResponseLink>
-                {
-                    new ResponseLink(
-                            Url.Action(
-                                null,
-                                "BoardGames",
-                                id,
-                                Request.Scheme)!,
-                            "self",
-                            "DELETE"),
-                }
-            };
-        }
+        //    return new RestResponse<bool>()
+        //    {
+        //        Data = isDeleted,       //* Change to provide Deleted BoardGame
+        //        Links = new List<ResponseLink>
+        //        {
+        //            new ResponseLink(
+        //                    Url.Action(
+        //                        null,
+        //                        "BoardGames",
+        //                        id,
+        //                        Request.Scheme)!,
+        //                    "self",
+        //                    "DELETE"),
+        //        }
+        //    };
+        //}
     }
 
     #endregion

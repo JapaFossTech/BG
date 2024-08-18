@@ -1,5 +1,6 @@
 ﻿using BG.Model.Core;
 using System.Linq.Expressions;
+using Infrastructure.Extensions;
 
 namespace BG.Serv.Core
 {
@@ -23,9 +24,9 @@ namespace BG.Serv.Core
         {
             //try
             //{
-                Domain? domain = await this.Repository.GetByID(pkID, doLoadLists);
+            Domain? domain = await this.Repository.GetByID(pkID, doLoadLists);
 
-                return domain;
+            return domain;
 
             //}
             //catch (Exception)
@@ -38,9 +39,42 @@ namespace BG.Serv.Core
         {
             //try
             //{
-                List<Domain> domains = await Repository.GetAll();
+            List<Domain> domains = await Repository.GetAll();
 
-                return domains;
+            return domains;
+
+            //}
+            //catch (Exception)
+            //{
+            //    throw;
+            //}
+        }
+        public async Task<List<Domain>> GetAll_Paged_Sorted_andFiltered(
+            int pageIndex = 0, int pageSize = 20
+            , string? sortColumn = null, string sortOrder = "ASC"
+            , string? filterQuery = null)
+        {
+            //try
+            //{
+            List<Domain> domains = await Repository
+                .GetAll_Paged_Sorted_andFiltered(
+                    pageIndex, pageSize, sortColumn, sortOrder, filterQuery);
+
+            return domains;
+
+            //}
+            //catch (Exception)
+            //{
+            //    throw;
+            //}
+        }
+        public async Task<int> GetAllRecordCount()
+        {
+            //try
+            //{
+            int count = await Repository.GetAllRecordCount();
+
+            return count;
 
             //}
             //catch (Exception)
@@ -89,7 +123,7 @@ namespace BG.Serv.Core
         {
             //try
             //{
-            int pkid  = await this.Repository.Update(domain);
+            int pkid = await this.Repository.Update(domain);
 
             return pkid;
 

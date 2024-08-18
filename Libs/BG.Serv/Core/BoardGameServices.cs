@@ -1,4 +1,6 @@
 ﻿using BG.Model.Core;
+using PrjBase.Data;
+using System.Drawing.Printing;
 using System.Linq.Expressions;
 
 namespace BG.Serv.Core
@@ -67,6 +69,22 @@ namespace BG.Serv.Core
             //    throw;
             //}
         }
+        //public async Task<List<BoardGame>> GetAll_Paged_Sorted_andFiltered(
+        //                        GetDataRequest<BoardGame> getDataRequest)
+        //{
+        //    //try
+        //    //{
+        //    List<BoardGame> boardGames = await Repository
+        //        .GetAll_Paged_Sorted_andFiltered(getDataRequest);
+
+        //    return boardGames;
+
+        //    //}
+        //    //catch (Exception)
+        //    //{
+        //    //    throw;
+        //    //}
+        //}
         public async Task<int> GetAllRecordCount()
         {
             //try
@@ -152,6 +170,8 @@ namespace BG.Serv.Core
         {
             return await this.Repository.Search(wherePredicate);
         }
+
+        
 
 
 

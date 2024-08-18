@@ -37,11 +37,11 @@ namespace BG.Model.Core
     #region Interfaces
 
     public partial interface IDomainRepository :
-            ICrud<Domain>, ISearch<Domain>
+        ICrud<Domain>, ISearch<Domain>, IPaging<Domain>
+        , ICount<Domain>
     { }
 
-    public partial interface IDomainServices :
-            ICrud<Domain>, ISearch<Domain>
+    public partial interface IDomainServices : IDomainRepository
     { }
 
     #endregion

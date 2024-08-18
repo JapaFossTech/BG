@@ -136,7 +136,7 @@ builder.Services.AddControllers(options =>
             () => $"A value is required.");
 
         options.CacheProfiles.Add("NoCache", new CacheProfile() { NoStore = true });
-        options.CacheProfiles.Add("Any-60", new CacheProfile()
+        options.CacheProfiles.Add("AnyRespCacheLocation-60", new CacheProfile()
         {
             Location = ResponseCacheLocation.Any,
             Duration = 60

@@ -2,12 +2,63 @@
 using System.Net.Http.Json;
 using BG.Model.Core;
 using Infrastructure.Data;
+using Infrastructure.Extensions;
 
 namespace BG.Repo.RestApi.Core
 {
     public partial class BoardGameRepository : IBoardGameRepository
     {
         private readonly HttpClient _HttpClient;
+        /// <summary>
+        /// Provides a model instance provided an endpoint. Retrieves data from an API
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="endPoint"></param>
+        /// <returns></returns>
+        private async Task<T?> GetFromApi<T>(string endPoint)
+        {
+            //TODO: this method should be moved to a base class library
+            try
+            {
+                if (_HttpClient == null)
+                    throw new Exception("_HttpClient is null");
+                else
+                {
+                    //Console.WriteLine("BoardGameRepository.GetAll: awaiting httpClient.GetAsync()");
+                    HttpResponseMessage response = await _HttpClient.GetAsync(endPoint);
+                    //Console.WriteLine("BoardGameRepository.GetAll BoardGames: DONE with httpClient.GetAsync()");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                        {
+                            //* The API did not return a body. Ignore
+                            //return Enumerable.Empty<BoardGame>();
+                        }
+                        else
+                        {
+                            T? model = await response.Content
+                                                    .ReadFromJsonAsync<T>();
+
+                            if (model != null)
+                                return model;
+                        }
+                    }
+                    else
+                    {
+                        string message = await response.Content.ReadAsStringAsync();
+                        throw new Exception(message);
+                    }
+                }
+
+                return default;
+            }
+            catch (Exception)
+            {
+                //* Log exception
+                throw;
+            }
+        }
 
         //* Ctor
         public BoardGameRepository(HttpClient httpClient)
@@ -68,7 +119,8 @@ namespace BG.Repo.RestApi.Core
                 else
                 {
                     //Console.WriteLine("BoardGameRepository.GetAll: awaiting httpClient.GetAsync()");
-                    HttpResponseMessage response = await _HttpClient.GetAsync($"Core/BoardGames");
+                    HttpResponseMessage response = await _HttpClient
+                                                    .GetAsync($"Core/BoardGames");
                     //Console.WriteLine("BoardGameRepository.GetAll BoardGames: DONE with httpClient.GetAsync()");
 
                     if (response.IsSuccessStatusCode)
@@ -80,7 +132,8 @@ namespace BG.Repo.RestApi.Core
                         }
                         else
                         {
-                            List<BoardGame>? boardGames = await response.Content.ReadFromJsonAsync<List<BoardGame>>();
+                            List<BoardGame>? boardGames = await response.Content
+                                                    .ReadFromJsonAsync<List<BoardGame>>();
 
                             if (boardGames != null)
                                 return boardGames;
@@ -101,9 +154,32 @@ namespace BG.Repo.RestApi.Core
                 throw;
             }
         }
-        public Task<List<BoardGame>> GetAll_Paged_Sorted_andFiltered(int pageIndex = 0, int pageSize = 20, string? sortColumn = null, string sortOrder = "ASC", string? filterQuery = null)
+        public async Task<List<BoardGame>> GetAll_Paged_Sorted_andFiltered(int pageIndex = 0
+            , int pageSize = 20, string? sortColumn = null, string sortOrder = "ASC"
+            , string? filterQuery = null)
         {
-            throw new NotImplementedException();
+            var queryStringElements = new List<string>()
+            {
+                $"PageIndex={pageIndex}"
+                , $"PageSize={pageSize}"
+                , $"SortOrder={sortOrder}"
+            };
+
+            if (sortColumn is not null && sortColumn.CheckHasData()) 
+                queryStringElements.Add($"SortColumn={sortColumn}");
+
+            if (filterQuery is not null && filterQuery.CheckHasData())
+                queryStringElements.Add($"FilterQuery={filterQuery}");
+
+            string endPoint = String.Format(
+                "Core/BoardGames?{0}"
+                , queryStringElements.JoinToString("&")
+                );
+
+            List<BoardGame> boardGames = await GetFromApi<List<BoardGame>>(endPoint)
+                                            ?? [];
+
+            return boardGames;
         }
         public async Task<int> GetAllRecordCount()
         {
