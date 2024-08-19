@@ -1,9 +1,11 @@
 ﻿using BG.Model.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using PrjBase.CachingBase;
 using PrjBase.Data;
+using PrjBase.SecurityBase;
 using RestBase;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json;
@@ -35,7 +37,12 @@ namespace BG.API.Controllers.Core
             _distributedCache = distributedCache;
         }
 
+        [Authorize(Roles = RoleName.ADMIN)]
         [HttpPost]
+        [ResponseCache(NoStore = true)]
+        [SwaggerOperation(
+            Summary = "Creates a new Domain (RoleName.ADMIN).",
+            Description = "Only role RoleName.ADMIN can insert to the database.")]
         public async Task<IActionResult> CreateDomain(Domain domain)
         {
             //* Validate
@@ -101,6 +108,9 @@ namespace BG.API.Controllers.Core
         }
 
         [HttpGet("{id:int}")]
+        [SwaggerOperation(
+            Summary = "Gets a single Domain.",
+            Description = "Retrieves a single Domain provided its Primary Key ID.")]
         public async Task<IActionResult> GetDomain(int id)
         {
             try
@@ -258,6 +268,11 @@ namespace BG.API.Controllers.Core
         }
 
         [HttpPut("{id:int}")]
+        [ResponseCache(NoStore = true)]
+        [Authorize(Roles = RoleName.ADMIN)]
+        [SwaggerOperation(
+            Summary = "Updates a Domain (RoleName.ADMIN).",
+            Description = "Updates using all fields from the provided entity parameter")]
         public async Task<IActionResult> UpdateDomain(int id, Domain domain)
         {
             //* Validate
@@ -271,14 +286,19 @@ namespace BG.API.Controllers.Core
             //* Proceed
             domain.DomainID = id;
             var pkid = await this.DomainServices.Update(domain);
-            //TODO: return 201 if a new breakfast was created
+            //TODO: return 201 if a new entity was created
             if (pkid > 0)
                 return NoContent();
             else
                 return NotFound();
         }
 
+        [Authorize(Roles = RoleName.ADMIN)]
         [HttpDelete("{id:int}")]
+        [ResponseCache(NoStore = true)]
+        [SwaggerOperation(
+            Summary = "Deletes a Domain (RoleName.ADMIN).",
+            Description = "Only role RoleName.ADMIN can delete from the database.")]
         public async Task<IActionResult> DeleteDomain(int id)
         {
             //* Validate

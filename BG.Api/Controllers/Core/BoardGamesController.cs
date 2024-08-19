@@ -310,7 +310,7 @@ namespace BG.API.Controllers.Core
         [Route("UpdateDto")]         //* api/Core/BoardGames/UpdateBoardGame
         [SwaggerOperation(
             Summary = "Updates a board game (RoleName.MODERATOR).",
-            Description = "Updates the board game's data.")]
+            Description = "Updates partially the entity. It will only change the provided fields")]
         public async Task<RestResponse<BoardGame?>> UpdateDto(
                                                     BoardGame_ChangeDTO boardGame)
         {
