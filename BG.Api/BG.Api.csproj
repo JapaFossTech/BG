@@ -19,6 +19,9 @@
 		<!-- This is reference at PrjBase.dll
 		<PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="8.0.5" /> -->
 		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.6" />
+		<!-- Azure -->
+		<!-- <PackageReference Include=""Microsoft.ApplicationInsights.AspNetCore"" Version=""2.21.0"" />
+        <PackageReference Include=""Microsoft.ApplicationInsights.AspNetCore"" Version=""2.21.0"" />-->
 	</ItemGroup>
 
 	<ItemGroup>

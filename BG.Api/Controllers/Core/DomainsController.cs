@@ -158,13 +158,13 @@ namespace BG.API.Controllers.Core
             string cacheKey = $"{gridDataRequest.GetType()}"
                                 + $"-{JsonSerializer.Serialize(gridDataRequest)}";
 
-            _logger.LogInformation(500151, "Get start. cacheKey : {cacheKey}", cacheKey);
+            _logger.LogInformation(EID.DOMAIN, "Get start. cacheKey : {cacheKey}", cacheKey);
 
             List<Domain>? domains = null;
 
             if (_memoryCache.TryGetValue<List<Domain>>(cacheKey, out domains))
             {
-                _logger.LogInformation(500151, "Data fetched from cached");
+                _logger.LogInformation(EID.DOMAIN, "Data fetched from cached");
             }
             else
             {
@@ -183,7 +183,7 @@ namespace BG.API.Controllers.Core
 
                 _memoryCache.Set(cacheKey, domains, new TimeSpan(0, 0, 20));
 
-                _logger.LogInformation(500151, "Data fetched from database");
+                _logger.LogInformation(EID.DOMAIN, "Data fetched from database");
 
                 #endregion
             }
@@ -194,7 +194,7 @@ namespace BG.API.Controllers.Core
 
             if (_distributedCache.TryGetValue<List<Domain>>(cacheKey, out domains_distributed))
             {
-                _logger.LogInformation(500151, "Data fetched from distributed cached");
+                _logger.LogInformation(EID.DOMAIN, "Data fetched from distributed cached");
             }
             else
             {
@@ -213,13 +213,13 @@ namespace BG.API.Controllers.Core
 
                 _distributedCache.Set(cacheKey, domains_distributed, new TimeSpan(0, 0, 40));
 
-                _logger.LogInformation(500151, "Data fetched from database (distributed)");
+                _logger.LogInformation(EID.DOMAIN, "Data fetched from database (distributed)");
 
                 #endregion
             }
 
 
-            _logger.LogInformation(500151
+            _logger.LogInformation(EID.DOMAIN
             , "Get end. domains.Count: {domains_Count}", domains!.Count);
 
             #region Create REST Response

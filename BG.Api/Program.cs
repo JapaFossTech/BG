@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PrjBase.SecurityBase;
@@ -22,6 +23,10 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
+
+#region Logging
+
 builder.Logging
     .ClearProviders()
     .AddSimpleConsole(
@@ -32,12 +37,6 @@ builder.Logging
     //    options.UseUtcTimestamp = true;
     //}
     )
-    //.AddJsonConsole( // Exercise 7.5.1
-    //    options => {
-    //        options.TimestampFormat = "HH:mm"; // Excercise 7.5.2
-    //        options.UseUtcTimestamp = true; // Excercise 7.5.2
-    //    }
-    //)
     .AddDebug()
     //.AddApplicationInsights(telemetry => telemetry
     //    .ConnectionString = builder
@@ -85,8 +84,20 @@ builder.Host.UseSerilog(
                 {
                     new SqlColumn()
                     {
+                        ColumnName = "EventId",
+                        PropertyName = "EventId",
+                        DataType = System.Data.SqlDbType.NVarChar
+                    },
+                    new SqlColumn()
+                    {
                         ColumnName = "SourceContext",
                         PropertyName = "SourceContext",
+                        DataType = System.Data.SqlDbType.NVarChar
+                    },
+                    new SqlColumn()
+                    {
+                        ColumnName = "RequestPath",
+                        PropertyName = "RequestPath",
                         DataType = System.Data.SqlDbType.NVarChar
                     }
                 }
@@ -96,7 +107,9 @@ builder.Host.UseSerilog(
     , writeToProviders: true
     );
 
-// Add services to the container.
+#endregion
+
+#region CORS
 
 builder.Services.AddCors(setupAction: options =>
 {
@@ -124,8 +137,12 @@ builder.Services.AddCors(setupAction: options =>
 //        )
 //    ;
 
+#endregion
+
 builder.Services.AddControllers(options =>
     {
+        #region Customizing the model biding errors
+
         options.ModelBindingMessageProvider.SetValueIsInvalidAccessor(
             (x) => $"The value '{x}' is invalid.");
         options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
@@ -134,6 +151,8 @@ builder.Services.AddControllers(options =>
             (x, y) => $"The value '{x}' is not valid for {y}.");
         options.ModelBindingMessageProvider.SetMissingKeyOrValueAccessor(
             () => $"A value is required.");
+
+        #endregion
 
         options.CacheProfiles.Add("NoCache", new CacheProfile() { NoStore = true });
         options.CacheProfiles.Add("AnyRespCacheLocation-60", new CacheProfile()
@@ -325,6 +344,24 @@ else
     //app.UseSwagger();     //* Uncomment if using: "ASPNETCORE_ENVIRONMENT": "Production" at launchSettings.json
     //app.UseSwaggerUI();
     app.UseExceptionHandler("/error");
+    //app.UseExceptionHandler(action => {
+    //    action.Run(async context =>
+    //    {
+    //        var exceptionHandler =
+    //            context.Features.Get<IExceptionHandlerPathFeature>();
+
+    //        var details = new ProblemDetails();
+    //        details.Detail = exceptionHandler?.Error.Message;
+    //        details.Extensions["traceId"] =
+    //            System.Diagnostics.Activity.Current?.Id
+    //              ?? context.TraceIdentifier;
+    //        details.Type =
+    //            "https://tools.ietf.org/html/rfc7231#section-6.6.1";
+    //        details.Status = StatusCodes.Status500InternalServerError;
+    //        await context.Response.WriteAsync(
+    //        System.Text.Json.JsonSerializer.Serialize(details));
+    //    });
+    //});
     // HTTP Security Headers
     app.UseHsts();
     app.Use(async (context, next) =>
@@ -397,11 +434,12 @@ app.Use((context, next) =>
     return next.Invoke();
 });
 
+#region Minimal API
+
 // Minimal API
-//app.MapGet(pattern: "/error"
-//    , [EnableCors("AnyOrigin")][ResponseCache(NoStore = true)]
-//    () => Results.Problem()
-//);
+
+#region app.MapGet("/error"
+
 app.MapGet("/error",
     [EnableCors("AnyOrigin")] [ResponseCache(NoStore = true)] 
     (HttpContext context) =>
@@ -411,29 +449,31 @@ app.MapGet("/error",
 
         var details = new ProblemDetails();
 
+
         details.Detail = exceptionHandler?.Error.Message;
         details.Extensions["traceId"] = System.Diagnostics
                                         .Activity.Current?.Id ?? context.TraceIdentifier;
         details.Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1";
         details.Status = StatusCodes.Status500InternalServerError;
 
-        //* Next line is causing duplicate error logging
-        //app.Logger.LogError(
-        //    50001,
-        //    exceptionHandler?.Error,
-        //    "An unhandled exception occurred: "
-        //    + "{errorMessage}.", exceptionHandler?.Error.Message  // Exercise 7.5.3
-        //    ); 
+        app.Logger.LogError(
+            app.Configuration.GetValue<int>("ErrorEventID"),
+            exceptionHandler?.Error,
+            "An unhandled exception occurred.");
 
         return Results.Problem(details);
     });
 
-//.RequireCors("AnyOrigin");
+#endregion
+
+#region app.MapGet("/error/test"
+
 app.MapGet(pattern: "/error/test", 
     [EnableCors("AnyOrigin")] 
     () => { throw new Exception("test"); }
     );
-//.RequireCors("AnyOrigin");
+
+#endregion
 
 app.MapGet(pattern: "/cod/test",
     [EnableCors("AnyOrigin")]
@@ -509,6 +549,8 @@ app.MapGet("/auth/test/3",
     {
         return Results.Ok("You are authorized!");
     });
+
+#endregion
 
 // Controllers
 app.MapControllers().RequireCors("AnyOrigin");
